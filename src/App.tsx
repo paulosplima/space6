@@ -822,7 +822,25 @@ export default function App() {
   }, []);
 
   // ===================== ACTIONS =====================
+  const enterFullscreen = () => {
+    try {
+      const docEl = document.documentElement as any;
+      const requestMethod = docEl.requestFullscreen || 
+                            docEl.webkitRequestFullscreen || 
+                            docEl.mozRequestFullScreen || 
+                            docEl.msRequestFullscreen;
+      if (requestMethod) {
+        requestMethod.call(docEl);
+      }
+    } catch (err) {
+      console.warn("Fullscreen request failed", err);
+    }
+  };
+
   const startNewGame = () => {
+    // Force browser fullscreen to hide address bars and notch constraints on mobile
+    enterFullscreen();
+
     initAudio();
     setScore(0);
     setLevel(1);
@@ -846,8 +864,23 @@ export default function App() {
   };
 
   const handleConfirmExit = () => {
-    // Redireciona para o site principal solicitado
-    window.location.href = 'https://www.matchin.com.br';
+    beep(200, 0.2, 'sawtooth', 0.05);
+
+    // Try to close the browser tab/window directly
+    window.close();
+
+    // Secondary attempt for different mobile browsers or inside embedded webviews/PWA modes
+    try {
+      window.open('', '_self', '');
+      window.close();
+    } catch (e) {
+      console.error("Window self-close failed", e);
+    }
+
+    // In case window.close() is blocked by browser safety rules, redirect to Matchin portal or blank screen
+    setTimeout(() => {
+      window.location.href = 'https://www.matchin.com.br';
+    }, 150);
   };
 
   const handleCancelExit = () => {
