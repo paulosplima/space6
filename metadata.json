@@ -1,0 +1,6 @@
+{
+  "name": "Space Invaders",
+  "description": "Jogo clássico de Space Invaders otimizado para desktop e celular em modo paisagem, com botão de saída e layout responsivo de tela inteira.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
