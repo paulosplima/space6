@@ -63,6 +63,7 @@ interface UFO {
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const starsCanvasRef = useRef<HTMLCanvasElement>(null);
   const gameCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -722,16 +723,19 @@ export default function App() {
   // ===================== APP RESIZE HANDLING =====================
   const handleResize = () => {
     const container = containerRef.current;
+    const mainContainer = mainRef.current;
     const gameCanvas = gameCanvasRef.current;
     const starsCanvas = starsCanvasRef.current;
 
-    if (!container || !gameCanvas || !starsCanvas) return;
+    if (!container || !mainContainer || !gameCanvas || !starsCanvas) return;
 
-    const cw = container.clientWidth;
-    const ch = container.clientHeight;
+    const cw = mainContainer.clientWidth;
+    const ch = mainContainer.clientHeight;
 
     // Check device portrait mode to display landscape prompt
-    setIsPortrait(ch > cw && cw < 768);
+    const vcw = container.clientWidth;
+    const vch = container.clientHeight;
+    setIsPortrait(vch > vcw && vcw < 768);
 
     const ratio = GAME_W / GAME_H;
     let w = cw;
@@ -746,8 +750,8 @@ export default function App() {
     gameCanvas.style.height = `${h}px`;
 
     // Stars canvas takes the complete background screen
-    starsCanvas.width = cw;
-    starsCanvas.height = ch;
+    starsCanvas.width = vcw;
+    starsCanvas.height = vch;
     drawStars();
   };
 
@@ -871,7 +875,7 @@ export default function App() {
     <div
       ref={containerRef}
       id="gameContainer"
-      className="relative w-screen h-screen flex flex-col items-center justify-between bg-[#050505] overflow-hidden select-none font-press-start border-4 border-[#1A1A1A]"
+      className="relative w-screen h-screen flex flex-col items-center justify-between bg-[#050505] overflow-hidden select-none font-press-start border-2 sm:border-4 border-[#1A1A1A]"
     >
       {/* Subtle CRT Overlay Scanning Lines Layer */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.035] crt-overlay z-50" />
@@ -880,7 +884,7 @@ export default function App() {
       <canvas ref={starsCanvasRef} className="absolute inset-0 w-full h-full z-1 pointer-events-none" />
 
       {/* HEADER BAR (Classic Arcade Cabinet Header) */}
-      <header className="w-full h-16 sm:h-20 bg-[#0A0A0A] border-b border-[#333] shadow-md flex items-center justify-between px-4 sm:px-8 relative z-40 select-none shrink-0">
+      <header className="hidden sm:flex w-full h-16 sm:h-20 bg-[#0A0A0A] border-b border-[#333] shadow-md flex items-center justify-between px-4 sm:px-8 relative z-40 select-none shrink-0">
         {/* Left Stats Section */}
         <div className="flex items-center space-x-4 sm:space-x-8 text-left">
           <div>
@@ -947,26 +951,127 @@ export default function App() {
       </header>
 
       {/* MAIN GAME CONTAINER (Centered responsive wrapper) */}
-      <main className="flex-grow w-full relative flex flex-col justify-center items-center px-4 overflow-hidden bg-radial from-[#050505] via-[#090909] to-[#020202]">
-        
+      <main
+        ref={mainRef}
+        className="flex-grow w-full relative flex flex-col justify-center items-center px-4 overflow-hidden bg-radial from-[#050505] via-[#090909] to-[#020202]"
+      >
         {/* Main Game Screen Canvas */}
         <canvas
           ref={gameCanvasRef}
           width={GAME_W}
           height={GAME_H}
-          className="relative z-10 image-render-pixelated max-w-full max-h-[85%] border-2 border-[#1A1A1A] shadow-[0_0_40px_rgba(57,255,20,0.15)] rounded bg-[#030303]"
+          className="relative z-10 image-render-pixelated max-w-full max-h-full sm:max-h-[85%] border border-[#222] sm:border-2 sm:border-[#1A1A1A] shadow-[0_0_40px_rgba(57,255,20,0.15)] rounded bg-[#030303]"
         />
 
         {/* Small floating HUD helper on canvas header for compact viewports */}
         {gameState === 'playing' && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex gap-4 select-none pointer-events-none bg-[#0a0a0a]/90 px-4 py-1.5 rounded-full border border-zinc-800 text-[9px] uppercase tracking-wider text-[#39FF14]">
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 hidden sm:flex gap-4 select-none pointer-events-none bg-[#0a0a0a]/90 px-4 py-1.5 rounded-full border border-zinc-800 text-[9px] uppercase tracking-wider text-[#39FF14]">
             <span>Level: {level}</span>
           </div>
         )}
       </main>
 
+      {/* MOBILE FULL-SCREEN HUD OVERLAY (Visible only on mobile/compact) */}
+      {gameState === 'playing' && (
+        <div className="sm:hidden absolute top-4 left-4 right-4 z-30 flex justify-between items-center select-none pointer-events-none">
+          {/* Left stats: Score & Level */}
+          <div className="flex gap-3 items-center bg-black/80 px-2.5 py-1 rounded border border-zinc-800 pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+            <div className="flex flex-col">
+              <span className="text-zinc-500 text-[7px] uppercase tracking-widest font-mono">Pts</span>
+              <span className="text-[10px] font-bold text-[#39FF14] text-shadow-glow">
+                {score.toString().padStart(6, '0')}
+              </span>
+            </div>
+            <div className="flex flex-col border-l border-zinc-800 pl-3">
+              <span className="text-zinc-500 text-[7px] uppercase tracking-widest font-mono">Lvl</span>
+              <span className="text-[10px] font-bold text-yellow-400">
+                {level}
+              </span>
+            </div>
+          </div>
+
+          {/* Center Lives display */}
+          <div className="flex items-center gap-1 bg-black/80 px-2.5 py-1.5 rounded border border-zinc-800 pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+            {Array.from({ length: Math.max(0, lives) }).map((_, idx) => (
+              <div
+                key={idx}
+                className="w-3 h-2 bg-[#39FF14] shadow-[0_0_5px_#39FF14] rounded-sm"
+                style={{ clipPath: 'polygon(50% 0%, 100% 50%, 100% 100%, 0% 100%, 0% 50%)' }}
+              />
+            ))}
+            {lives <= 0 && <span className="text-red-500 text-[8px] font-bold">0</span>}
+          </div>
+
+          {/* Right Controls: Sound & Exit */}
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            {/* Toggle Sound */}
+            <button
+              onClick={() => {
+                setSoundEnabled(prev => !prev);
+                beep(600, 0.05, 'sine', 0.02);
+              }}
+              className="p-1.5 rounded-full border border-zinc-800 bg-black/80 text-zinc-400 hover:text-[#39FF14] cursor-pointer"
+              title="Alternar Áudio"
+            >
+              {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+            </button>
+
+            {/* EXIT Button */}
+            <button
+              onClick={handleExitRequest}
+              className="bg-[#CC0000] hover:bg-[#FF0000] text-white px-2 py-1 rounded text-[7px] font-bold border border-black shadow uppercase cursor-pointer"
+            >
+              Exit
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE TOUCH STEERING OVERLAYS (Visible only on mobile/compact) */}
+      {gameState === 'playing' && (
+        <div className="sm:hidden absolute bottom-4 left-4 right-4 z-30 flex justify-between items-end select-none pointer-events-none">
+          {/* Left & Right Arrow Buttons */}
+          <div className="flex gap-2 pointer-events-auto">
+            <button
+              onTouchStart={() => handleTouchLeft(true)}
+              onTouchEnd={() => handleTouchLeft(false)}
+              onMouseDown={() => handleTouchLeft(true)}
+              onMouseUp={() => handleTouchLeft(false)}
+              onMouseLeave={() => handleTouchLeft(false)}
+              className="w-12 h-12 bg-black/80 border border-zinc-700 hover:border-[#39FF14] text-white active:bg-[#39FF14]/30 flex items-center justify-center text-lg font-bold rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.8)] cursor-pointer select-none touch-none"
+            >
+              ←
+            </button>
+            <button
+              onTouchStart={() => handleTouchRight(true)}
+              onTouchEnd={() => handleTouchRight(false)}
+              onMouseDown={() => handleTouchRight(true)}
+              onMouseUp={() => handleTouchRight(false)}
+              onMouseLeave={() => handleTouchRight(false)}
+              className="w-12 h-12 bg-black/80 border border-zinc-700 hover:border-[#39FF14] text-white active:bg-[#39FF14]/30 flex items-center justify-center text-lg font-bold rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.8)] cursor-pointer select-none touch-none"
+            >
+              →
+            </button>
+          </div>
+
+          {/* Large Crimson Fire/Shoot Button */}
+          <div className="pointer-events-auto">
+            <button
+              onTouchStart={() => handleTouchFire(true)}
+              onTouchEnd={() => handleTouchFire(false)}
+              onMouseDown={() => handleTouchFire(true)}
+              onMouseUp={() => handleTouchFire(false)}
+              onMouseLeave={() => handleTouchFire(false)}
+              className="w-18 h-12 bg-[#CC0000] border-2 border-[#800000] text-white active:bg-[#ff0000] flex items-center justify-center text-[10px] font-black uppercase rounded-lg shadow-[0_2px_10px_rgba(204,0,0,0.6)] cursor-pointer select-none touch-none"
+            >
+              Shoot
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* FOOTER CONTROLS BAR (Classic Retro Control Board Panel) */}
-      <footer className="w-full h-20 sm:h-24 bg-[#0A0A0A] border-t border-[#333] px-4 sm:px-8 flex items-center justify-between relative z-40 shrink-0">
+      <footer className="hidden sm:flex w-full h-20 sm:h-24 bg-[#0A0A0A] border-t border-[#333] px-4 sm:px-8 flex items-center justify-between relative z-40 shrink-0">
         
         {/* Left Directional Touch Pads */}
         <div className="flex space-x-3 sm:space-x-4">
